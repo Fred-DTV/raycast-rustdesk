@@ -2,6 +2,8 @@
 
 Raycast command that lists RustDesk peers from your local client config, filters as you type, and connects with one action.
 
+Be aware that this project is *entirely vibe-coded*
+
 ## Requirements
 
 - [Raycast](https://www.raycast.com/) (macOS; Windows supported by extension metadata)
