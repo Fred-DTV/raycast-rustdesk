@@ -68,9 +68,8 @@ export default function Command() {
       {!error &&
         filtered.map((device: Device) => (
           <List.Item
-            key={device.id}
+            key={device.name.toLowerCase()}
             title={device.name}
-            subtitle={device.name === device.id ? device.platform : device.id}
             accessories={[
               ...(device.platform ? [{ text: device.platform }] : []),
               ...(device.username ? [{ text: device.username, icon: Icon.Person }] : []),

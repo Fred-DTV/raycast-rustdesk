@@ -127,6 +127,68 @@ function unique(values: string[]): string[] {
   return out;
 }
 
+/** Pure numeric RustDesk IDs (e.g. 1057674464) lose to named IDs (DATA3). */
+function isNumericId(id: string): boolean {
+  return /^\d+$/.test(id.trim());
+}
+
+/** Stable display key: hostname/alias/name, lowercased. */
+function deviceNameKey(device: Device): string {
+  const raw = (device.hostname || device.name || device.id).trim().toLowerCase();
+  return raw;
+}
+
+/** Prefer named/custom ID over numeric twin for same machine. */
+function preferDevice(a: Device, b: Device): Device {
+  const aNum = isNumericId(a.id);
+  const bNum = isNumericId(b.id);
+  if (aNum !== bNum) {
+    return aNum ? b : a;
+  }
+
+  // Prefer ID that looks like the device name
+  const name = (a.hostname || a.name || "").toLowerCase();
+  const aMatch = a.id.toLowerCase() === name || a.id.toLowerCase().replace(/[^a-z0-9]/g, "") === name.replace(/[^a-z0-9]/g, "");
+  const bMatch = b.id.toLowerCase() === name || b.id.toLowerCase().replace(/[^a-z0-9]/g, "") === name.replace(/[^a-z0-9]/g, "");
+  if (aMatch !== bMatch) {
+    return aMatch ? a : b;
+  }
+
+  // Prefer override source
+  if (a.source !== b.source) {
+    return a.source === "override" ? a : b;
+  }
+
+  // Prefer shorter non-numeric / lexicographically stable id
+  if (a.id.length !== b.id.length) {
+    return a.id.length <= b.id.length ? a : b;
+  }
+  return a.id.localeCompare(b.id) <= 0 ? a : b;
+}
+
+function dedupeByDeviceName(devices: Device[]): Device[] {
+  const byName = new Map<string, Device>();
+
+  for (const device of devices) {
+    const key = deviceNameKey(device);
+    const existing = byName.get(key);
+    if (!existing) {
+      byName.set(key, device);
+      continue;
+    }
+
+    const winner = preferDevice(existing, device);
+    const loser = winner === existing ? device : existing;
+    byName.set(key, {
+      ...winner,
+      // Keep searchable alternate IDs without showing a second row
+      keywords: unique([...(winner.keywords ?? []), loser.id, ...(loser.keywords ?? [])]),
+    });
+  }
+
+  return [...byName.values()];
+}
+
 async function loadOverrideDevices(): Promise<Device[]> {
   try {
     const path = join(environment.assetsPath, "devices.json");
@@ -200,7 +262,8 @@ export async function loadDevices(): Promise<Device[]> {
     throw new Error(`Cannot read RustDesk peers at ${dir}: ${peerDirError.message}`);
   }
 
-  return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+  const deduped = dedupeByDeviceName([...byId.values()]);
+  return deduped.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
 }
 
 export function peersPathForDisplay(): string {
