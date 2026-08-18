@@ -35,6 +35,7 @@
     "typescript": "^5.8.2"
   },
   "scripts": {
+    "install:raycast": "bash ./install.sh",
     "build": "ray build",
     "dev": "ray develop",
     "fix-lint": "ray lint --fix",

@@ -10,22 +10,38 @@ Raycast command that lists RustDesk peers from your local client config, filters
   - macOS default binary: `/Applications/RustDesk.app/Contents/MacOS/RustDesk`
   - Windows default binary: `C:\\Program Files\\RustDesk\\rustdesk.exe`
 
-## Install (team)
+## Install (one command)
+
+Needs: Raycast, Node.js 20+, git, RustDesk.
 
 ```bash
-git clone <REPO_URL>
-cd rustdesk
-npm install
-npm run dev
+curl -fsSL https://raw.githubusercontent.com/Fred-DTV/raycast-rustdesk/main/install.sh | bash
 ```
 
-`npm run dev` starts Raycast development mode and registers the extension. Keep that terminal open while developing; for day-to-day use you can stop it after Raycast has imported the extension once, or use **Import Extension** in Raycast and point at this folder after `npm install` + `npm run build`.
+What it does:
 
-### Import without keeping dev mode open
+1. Clones/updates into `~/.local/share/raycast-rustdesk`
+2. `npm ci` + production `ray build` (no permanent watcher)
+3. Briefly registers the extension with Raycast, then exits
 
-1. `npm install`
-2. `npm run build`
-3. Raycast → **Import Extension** → select this `rustdesk` folder
+After that, open Raycast → **Rustconnect**. No terminal left running.
+
+Re-run the same command to update.
+
+### Already cloned?
+
+```bash
+./install.sh
+# or
+npm run install:raycast
+```
+
+### Manual fallback
+
+If the command does not appear:
+
+1. Raycast → **Import Extension**
+2. Select `~/.local/share/raycast-rustdesk` (or your clone path)
 
 ### Use
 
@@ -70,9 +86,10 @@ Run from this directory. Prefer npm scripts so you do not hit an unrelated `ray`
 
 | Command | Purpose |
 | --- | --- |
-| `npm install` | Install dependencies |
-| `npm run dev` | Develop / register with Raycast |
-| `npm run build` | Production build |
+| `npm run install:raycast` | One-shot install/update (preferred) |
+| `npm install` | Install dependencies only |
+| `npm run build` | Production build into Raycast |
+| `npm run dev` | Live reload while hacking on the extension |
 | `npm run lint` | Lint |
 | `npm run publish` | Publish to Raycast Store (org/private needs Team plan) |
 
@@ -103,5 +120,6 @@ package.json             Raycast extension manifest
 | --- | --- |
 | No peers | RustDesk installed and used at least once; peers dir exists; Raycast file access |
 | Connect fails | RustDesk path; try launching RustDesk manually |
-| `ray: command not found` / wrong tool | Use `npm run dev` / `npm run build`, not a global `ray` |
+| `ray: command not found` / wrong tool | Use `npm run install:raycast` / `npm run build`, not a global `ray` |
+| Command missing after install | Raycast → Import Extension → install folder; ensure Raycast is signed in |
 | Stale list | Action **Reload Peers**, or reconnect once in RustDesk so a peer file is written |
