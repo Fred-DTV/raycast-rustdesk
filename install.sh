@@ -179,7 +179,7 @@ Do this BEFORE enabling in Raycast:
 3. Go to Settings → Tokens → Create.
 4. Enable at least Device permission (read is enough for status).
 5. Copy the token once (you will not see it again).
-6. Note your API base URL, e.g. https://rustdesk.example.com
+6. Note your API base URL, e.g. https://rustdesk.YOURCOMPANY.com
    (same host clients use as api-server; no /api suffix).
 
 Then in Raycast:

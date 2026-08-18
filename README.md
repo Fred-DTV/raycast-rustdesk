@@ -66,7 +66,7 @@ When enabled, Rustconnect shows **Online** / **Offline** tags from your RustDesk
 4. Grant at least **Device** permission (read is enough for online status).
 5. Create the token and **copy it immediately** (it is shown once).
 6. Note the **API base URL** clients already use as `api-server`
-   (example: `https://rustdesk.example.com` — **no** `/api` suffix, no token in the URL).
+   (example: `https://rustdesk.YOURCOMPANY.com` — **no** `/api` suffix, no token in the URL).
 
 Optional but recommended:
 
@@ -79,7 +79,7 @@ Optional but recommended:
 1. Raycast → **Extensions** → **Rustdesk** → open preferences
    (or run **Rustconnect** → `⌘ ,` if bound to command preferences).
 2. Check **Show online/offline from Server Pro API**.
-3. Set **API base URL** (e.g. `https://rustdesk.rawmotion.com`).
+3. Set **API base URL** (e.g. `https://rustdesk.YOURCOMPANY.com`).
 4. Paste **API token** (password field; stored by Raycast on this machine only).
 5. Optional: **Offline after (minutes)** — used when the API only exposes last-seen timestamps (default `10`).
 6. Run **Rustconnect** → **Reload Peers**.

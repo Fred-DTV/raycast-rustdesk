@@ -37,8 +37,8 @@
       "type": "textfield",
       "required": false,
       "title": "API base URL",
-      "description": "Server Pro API root, e.g. https://rustdesk.example.com (no trailing path).",
-      "placeholder": "https://rustdesk.rawmotion.com",
+      "description": "Server Pro API root, e.g. https://rustdesk.YOURCOMPANY.com (no trailing path).",
+      "placeholder": "https://rustdesk.YOURCOMPANY.com",
       "default": ""
     },
     {
