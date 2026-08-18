@@ -10,6 +10,8 @@ Raycast command that lists RustDesk peers from your local client config, filters
   - macOS default binary: `/Applications/RustDesk.app/Contents/MacOS/RustDesk`
   - Windows default binary: `C:\\Program Files\\RustDesk\\rustdesk.exe`
 
+[![Buy Me A Coffee](https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=&slug=edge_case&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff)](https://www.buymeacoffee.com/edge_case)
+
 ## Install (one command)
 
 Needs: Raycast, Node.js 20+, git, RustDesk.
