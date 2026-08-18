@@ -25,8 +25,13 @@ interface DeviceRow {
   hostname?: string;
   device_name?: string;
   name?: string;
+  /** presence flags if present (rare); not the same as status */
   online?: boolean | number | string;
   is_online?: boolean | number | string;
+  /**
+   * Server Pro "status" is device enabled/disabled in console, NOT live presence.
+   * Do not treat status===1 as online.
+   */
   status?: number | string;
   last_online?: string | number;
   lastOnline?: string | number;
@@ -34,6 +39,7 @@ interface DeviceRow {
   info?: {
     hostname?: string;
     device_name?: string;
+    username?: string;
   };
 }
 
@@ -68,19 +74,46 @@ function truthyOnline(value: unknown): boolean | undefined {
   return undefined;
 }
 
-function parseLastSeenMs(row: DeviceRow): number | undefined {
-  const raw = row.last_online ?? row.lastOnline ?? row.last_seen;
+/**
+ * Parse Server Pro last_online.
+ * Official devices.py uses UTC wall time: "%Y-%m-%dT%H:%M:%S" (no Z).
+ * JS Date.parse without timezone is local — force UTC when zone missing.
+ */
+export function parseLastOnlineMs(raw: unknown): number | undefined {
   if (raw == null || raw === "") return undefined;
-  if (typeof raw === "number") {
-    // seconds vs ms
+
+  if (typeof raw === "number" && Number.isFinite(raw)) {
     return raw < 1e12 ? raw * 1000 : raw;
   }
-  const n = Number(raw);
-  if (!Number.isNaN(n) && raw.trim() !== "" && /^\d+$/.test(raw.trim())) {
+
+  const s0 = String(raw).trim();
+  if (!s0) return undefined;
+
+  if (/^\d+(\.\d+)?$/.test(s0)) {
+    const n = Number(s0);
+    if (!Number.isFinite(n)) return undefined;
     return n < 1e12 ? n * 1000 : n;
   }
-  const t = Date.parse(String(raw));
+
+  const m = s0.match(
+    /^(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2})(\.\d+)?(Z|[+-]\d{2}:?\d{2})?$/i,
+  );
+  if (m) {
+    const base = m[1].replace(" ", "T");
+    const zone = m[3];
+    const iso = zone ? `${base}${zone}` : `${base}Z`;
+    const t = Date.parse(iso);
+    if (!Number.isNaN(t)) return t;
+  }
+
+  const t = Date.parse(s0);
   return Number.isNaN(t) ? undefined : t;
+}
+
+/** DB migration sentinel used by Server Pro (~2011) — not a real session. */
+function isSentinelLastOnline(ms: number): boolean {
+  const y = new Date(ms).getUTCFullYear();
+  return y > 0 && y < 2015;
 }
 
 function offlineThresholdMs(pref: string): number {
@@ -89,33 +122,43 @@ function offlineThresholdMs(pref: string): number {
   return m * 60 * 1000;
 }
 
-function stateFromRow(row: DeviceRow, thresholdMs: number): OnlineState {
+/**
+ * Live presence from Server Pro device row.
+ * Prefer last_online (same as official devices.py offline filter).
+ * Ignore console enabled/disabled `status`.
+ */
+export function stateFromRow(row: DeviceRow, thresholdMs: number, nowMs: number = Date.now()): OnlineState {
   const direct = truthyOnline(row.online) ?? truthyOnline(row.is_online);
   if (direct !== undefined) {
     return direct ? "online" : "offline";
   }
 
-  if (row.status !== undefined && row.status !== null && row.status !== "") {
-    const s = String(row.status).toLowerCase();
-    if (s === "1" || s === "online") return "online";
-    if (s === "0" || s === "offline" || s === "2") return "offline";
-    const n = Number(row.status);
-    // common: 1 online, 0 offline
-    if (n === 1) return "online";
-    if (n === 0 || n === 2) return "offline";
+  const last = parseLastOnlineMs(row.last_online ?? row.lastOnline ?? row.last_seen);
+  if (last === undefined) {
+    return "unknown";
+  }
+  if (isSentinelLastOnline(last)) {
+    return "offline";
+  }
+  if (last > nowMs + 60_000) {
+    return "unknown";
   }
 
-  const last = parseLastSeenMs(row);
-  if (last !== undefined) {
-    return Date.now() - last <= thresholdMs ? "online" : "offline";
-  }
-
-  return "unknown";
+  return nowMs - last <= thresholdMs ? "online" : "offline";
 }
 
 function rowKeys(row: DeviceRow): string[] {
   const keys: string[] = [];
-  for (const v of [row.id, row.device_id, row.rid, row.uuid, row.hostname, row.device_name, row.name, row.info?.hostname, row.info?.device_name]) {
+  for (const v of [
+    row.id,
+    row.device_id,
+    row.rid,
+    row.device_name,
+    row.hostname,
+    row.info?.device_name,
+    row.info?.hostname,
+    row.name,
+  ]) {
     if (v && String(v).trim()) {
       keys.push(String(v).trim().toLowerCase());
     }
@@ -143,7 +186,12 @@ function extractRows(payload: unknown): DeviceRow[] {
   return [];
 }
 
-async function fetchDevicesPage(baseUrl: string, token: string, current: number, pageSize: number): Promise<{ rows: DeviceRow[]; total?: number }> {
+async function fetchDevicesPage(
+  baseUrl: string,
+  token: string,
+  current: number,
+  pageSize: number,
+): Promise<{ rows: DeviceRow[]; total?: number }> {
   const url = new URL(`${baseUrl}/api/devices`);
   url.searchParams.set("current", String(current));
   url.searchParams.set("pageSize", String(pageSize));
@@ -161,19 +209,19 @@ async function fetchDevicesPage(baseUrl: string, token: string, current: number,
   }
 
   const json: unknown = await res.json();
+  if (json && typeof json === "object" && "error" in json && (json as { error?: unknown }).error) {
+    throw new Error(String((json as { error: unknown }).error));
+  }
+
   const rows = extractRows(json);
   const total =
     json && typeof json === "object" && typeof (json as { total?: unknown }).total === "number"
-      ? ((json as { total: number }).total)
+      ? (json as { total: number }).total
       : undefined;
 
   return { rows, total };
 }
 
-/**
- * Load online map from Server Pro devices API.
- * Optional: if not configured, returns enabled:false and empty map.
- */
 export async function loadOnlineLookup(): Promise<OnlineLookup> {
   let p: OnlinePreferences;
   try {
@@ -201,6 +249,7 @@ export async function loadOnlineLookup(): Promise<OnlineLookup> {
   const pageSize = 100;
   let current = 1;
   let total: number | undefined;
+  const nowMs = Date.now();
 
   try {
     while (current <= 50) {
@@ -208,14 +257,22 @@ export async function loadOnlineLookup(): Promise<OnlineLookup> {
       total = page.total ?? total;
 
       for (const row of page.rows) {
-        const state = stateFromRow(row, thresholdMs);
+        const state = stateFromRow(row, thresholdMs, nowMs);
         for (const key of rowKeys(row)) {
           const prev = byKey.get(key);
-          // prefer online if any key collision
-          if (prev === "online") continue;
-          if (state === "online" || !prev || prev === "unknown") {
+          if (!prev || prev === "unknown") {
             byKey.set(key, state);
+            continue;
           }
+          // Prefer offline over online on key collision (safer; avoids "everyone online")
+          if (prev === "offline" && state === "online") {
+            continue;
+          }
+          if (prev === "online" && state === "offline") {
+            byKey.set(key, "offline");
+            continue;
+          }
+          byKey.set(key, state);
         }
       }
 
@@ -232,17 +289,28 @@ export async function loadOnlineLookup(): Promise<OnlineLookup> {
   }
 }
 
-export function resolveOnlineState(device: { id: string; name: string; hostname?: string }, lookup: OnlineLookup | undefined): OnlineState {
+export function resolveOnlineState(
+  device: { id: string; name: string; hostname?: string },
+  lookup: OnlineLookup | undefined,
+): OnlineState {
   if (!lookup?.enabled) return "unknown";
-  const keys = [device.id, device.hostname, device.name]
+
+  // Prefer exact ID match first (avoids hostname collisions)
+  const idKey = device.id.trim().toLowerCase();
+  if (idKey && lookup.byKey.has(idKey)) {
+    return lookup.byKey.get(idKey) ?? "unknown";
+  }
+
+  const keys = [device.hostname, device.name]
     .filter((v): v is string => Boolean(v && v.trim()))
     .map((v) => v.trim().toLowerCase());
 
   let best: OnlineState = "unknown";
   for (const key of keys) {
     const s = lookup.byKey.get(key);
-    if (s === "online") return "online";
-    if (s === "offline") best = "offline";
+    if (!s || s === "unknown") continue;
+    if (s === "offline") return "offline";
+    if (s === "online") best = "online";
   }
   return best;
 }

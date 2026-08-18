@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- Fix false Online tags: use last_online (UTC), ignore console status enabled flag
 - Optional Server Pro API online/offline tags (off by default; prefs + install help)
 - Dedupe peer list by device name (named ID preferred over numeric twin)
 - One-command install (`install.sh` / curl) without lasting dev mode
