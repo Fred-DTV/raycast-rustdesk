@@ -164,7 +164,70 @@ open_raycast() {
   fi
 }
 
+# Optional Server Pro online-status guidance (never stores the token in git).
+print_online_status_guide() {
+  cat <<'EOF'
+
+--- Optional: online/offline status (Server Pro API) ---
+Default install leaves this OFF. List still works from local peers only.
+
+Do this BEFORE enabling in Raycast:
+
+1. Open your RustDesk Server Pro web console
+   (often https://YOUR-SERVER:21114 or your HTTPS reverse-proxy URL).
+2. Sign in as admin.
+3. Go to Settings → Tokens → Create.
+4. Enable at least Device permission (read is enough for status).
+5. Copy the token once (you will not see it again).
+6. Note your API base URL, e.g. https://rustdesk.example.com
+   (same host clients use as api-server; no /api suffix).
+
+Then in Raycast:
+1. Open Extensions → Rustdesk → Preferences (or command preferences).
+2. Enable "Show online/offline from Server Pro API".
+3. Paste API base URL.
+4. Paste API token (password field — stays on this Mac only).
+5. Optional: "Offline after (minutes)" if API only returns last-seen (default 10).
+6. Run Rustconnect → Reload Peers.
+
+Security:
+- Never put the token in git, chat, or devices.json.
+- Prefer a read-only Device token.
+- Revoke the token in the console if a machine is lost.
+EOF
+}
+
+prompt_online_status_help() {
+  # Non-interactive (curl|bash without TTY): print short pointer only
+  if [[ ! -t 0 ]] || [[ "${RAYCAST_RUSTDESK_NONINTERACTIVE:-}" == "1" ]]; then
+    cat <<'EOF'
+
+Online status: optional, off by default.
+Setup steps: see README "Optional online status" or re-run:
+  ./install.sh --online-help
+EOF
+    return
+  fi
+
+  printf '\nConfigure optional online/offline status now? [y/N] '
+  local ans=""
+  read -r ans || true
+  case "${ans}" in
+    y|Y|yes|YES)
+      print_online_status_guide
+      ;;
+    *)
+      printf 'Skipped. Enable later via Raycast preferences + README.\n'
+      ;;
+  esac
+}
+
 main() {
+  if [[ "${1:-}" == "--online-help" ]]; then
+    print_online_status_guide
+    exit 0
+  fi
+
   check_prereqs
   local dir
   dir="$(resolve_dir "${1:-}")"
@@ -173,6 +236,7 @@ main() {
   build_extension "$dir"
   register_extension "$dir" || true
   open_raycast
+  prompt_online_status_help
 
   cat <<EOF
 
@@ -184,6 +248,8 @@ No need to keep a terminal/dev process running.
 
 If the command is missing:
   Raycast → Import Extension → $dir
+
+Optional online status docs: ./install.sh --online-help
 EOF
 }
 

@@ -22,6 +22,43 @@
       "mode": "view"
     }
   ],
+  "preferences": [
+    {
+      "name": "enableOnlineStatus",
+      "type": "checkbox",
+      "required": false,
+      "title": "Online status",
+      "label": "Show online/offline from Server Pro API",
+      "description": "Optional. Needs API base URL + token from the web console (Settings → Tokens, Device permission). Off by default.",
+      "default": false
+    },
+    {
+      "name": "apiBaseUrl",
+      "type": "textfield",
+      "required": false,
+      "title": "API base URL",
+      "description": "Server Pro API root, e.g. https://rustdesk.example.com (no trailing path).",
+      "placeholder": "https://rustdesk.rawmotion.com",
+      "default": ""
+    },
+    {
+      "name": "apiToken",
+      "type": "password",
+      "required": false,
+      "title": "API token",
+      "description": "Bearer token from Server Pro web console. Never commit this value.",
+      "placeholder": "Paste token"
+    },
+    {
+      "name": "offlineAfterMinutes",
+      "type": "textfield",
+      "required": false,
+      "title": "Offline after (minutes)",
+      "description": "If API only returns last-seen time, treat older than this as offline.",
+      "default": "10",
+      "placeholder": "10"
+    }
+  ],
   "dependencies": {
     "@raycast/api": "^1.104.1",
     "@raycast/utils": "^1.17.0"
