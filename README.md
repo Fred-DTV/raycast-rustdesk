@@ -1,18 +1,20 @@
 # RustDesk Raycast extension (Rustconnect)
 
+[![Buy Me A Coffee](https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=&slug=edge_case&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff)](https://www.buymeacoffee.com/edge_case)
+
 Raycast command that lists RustDesk peers from your local client config, filters as you type, and connects with one action.
 
-Be aware that this project is *entirely vibe-coded*
+Be aware that this project is *entirely vibe-coded*.
+
+> **Tested on macOS only.** Windows is listed in the extension metadata and has a launch path in code, but connect / peer loading / install have **not** been verified on Windows.
 
 ## Requirements
 
-- [Raycast](https://www.raycast.com/) (macOS; Windows supported by extension metadata)
+- [Raycast](https://www.raycast.com/) (tested on macOS; Windows untested)
 - [Node.js](https://nodejs.org/) 20+ recommended
 - [RustDesk](https://rustdesk.com/) installed locally
   - macOS default binary: `/Applications/RustDesk.app/Contents/MacOS/RustDesk`
-  - Windows default binary: `C:\\Program Files\\RustDesk\\rustdesk.exe`
-
-[![Buy Me A Coffee](https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=&slug=edge_case&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff)](https://www.buymeacoffee.com/edge_case)
+  - Windows default binary: `C:\\Program Files\\RustDesk\\rustdesk.exe` (untested)
 
 ## Install (one command)
 

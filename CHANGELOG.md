@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Detached RustDesk launch (keep session alive; preserve ID case; no rustdesk:// lowercase)
+- README: note that testing has only been done on macOS
 - Fix false Online tags: use last_online (UTC), ignore console status enabled flag
 - Optional Server Pro API online/offline tags (off by default; prefs + install help)
 - Dedupe peer list by device name (named ID preferred over numeric twin)
