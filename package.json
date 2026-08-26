@@ -1,8 +1,8 @@
 {
   "$schema": "https://www.raycast.com/schemas/extension.json",
   "name": "rustdesk",
-  "title": "Rustdesk",
-  "description": "Search local RustDesk peers and connect",
+  "title": "Rustconnect",
+  "description": "Search local RustDesk peers and connect (exact peer-file IDs)",
   "icon": "extension-icon.png",
   "author": "fred_lordick",
   "owner": "dtv-og",
@@ -18,7 +18,8 @@
     {
       "name": "rustconnect",
       "title": "Rustconnect",
-      "description": "Search devices and connect with RustDesk",
+      "description": "Search local peers and connect with exact RustDesk IDs",
+      "keywords": ["rustdesk", "rdp", "remote"],
       "mode": "view"
     }
   ],

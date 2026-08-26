@@ -12,6 +12,11 @@ export interface OnlinePreferences {
 export interface OnlineLookup {
   /** keyed by lowercased device id and hostname */
   byKey: Map<string, OnlineState>;
+  /**
+   * Exact device IDs from Server Pro (authoritative casing), keyed lowercase.
+   * Used so Connect uses WRC-REMOTING3 not WRC-Remoting3.
+   */
+  canonicalIds: Map<string, string>;
   /** true if prefs enabled and request attempted */
   enabled: boolean;
   error?: string;
@@ -227,11 +232,11 @@ export async function loadOnlineLookup(): Promise<OnlineLookup> {
   try {
     p = prefs();
   } catch {
-    return { byKey: new Map(), enabled: false };
+    return { byKey: new Map(), canonicalIds: new Map(), enabled: false };
   }
 
   if (!p.enableOnlineStatus) {
-    return { byKey: new Map(), enabled: false };
+    return { byKey: new Map(), canonicalIds: new Map(), enabled: false };
   }
 
   const baseUrl = normalizeBaseUrl(p.apiBaseUrl || "");
@@ -239,6 +244,7 @@ export async function loadOnlineLookup(): Promise<OnlineLookup> {
   if (!baseUrl || !token) {
     return {
       byKey: new Map(),
+      canonicalIds: new Map(),
       enabled: true,
       error: "Online status enabled but API URL or token missing (Raycast → Extensions → Rustdesk)",
     };
@@ -246,6 +252,7 @@ export async function loadOnlineLookup(): Promise<OnlineLookup> {
 
   const thresholdMs = offlineThresholdMs(p.offlineAfterMinutes);
   const byKey = new Map<string, OnlineState>();
+  const canonicalIds = new Map<string, string>();
   const pageSize = 100;
   let current = 1;
   let total: number | undefined;
@@ -258,7 +265,14 @@ export async function loadOnlineLookup(): Promise<OnlineLookup> {
 
       for (const row of page.rows) {
         const state = stateFromRow(row, thresholdMs, nowMs);
+        const exactId = (row.id || row.device_id || row.rid || "").trim();
         for (const key of rowKeys(row)) {
+          if (exactId) {
+            // Keep first exact server id; do not overwrite with weaker fields
+            if (!canonicalIds.has(key)) {
+              canonicalIds.set(key, exactId);
+            }
+          }
           const prev = byKey.get(key);
           if (!prev || prev === "unknown") {
             byKey.set(key, state);
@@ -282,10 +296,10 @@ export async function loadOnlineLookup(): Promise<OnlineLookup> {
       current += 1;
     }
 
-    return { byKey, enabled: true };
+    return { byKey, canonicalIds, enabled: true };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    return { byKey: new Map(), enabled: true, error: message };
+    return { byKey: new Map(), canonicalIds: new Map(), enabled: true, error: message };
   }
 }
 

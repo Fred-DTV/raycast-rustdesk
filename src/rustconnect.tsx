@@ -2,7 +2,7 @@ import { Action, ActionPanel, Color, Icon, List } from "@raycast/api";
 import { usePromise } from "@raycast/utils";
 import { useMemo, useState } from "react";
 import { connectRustDesk } from "./connectRustDesk";
-import { Device, loadDevices, peersPathForDisplay } from "./loadPeers";
+import { applyCanonicalIdsFromApi, Device, loadDevices, peersPathForDisplay } from "./loadPeers";
 import { loadOnlineLookup, OnlineState, resolveOnlineState } from "./onlineStatus";
 
 function platformIcon(platform?: string): Icon {
@@ -43,7 +43,10 @@ export default function Command() {
     revalidate: revalidateOnline,
   } = usePromise(loadOnlineLookup);
 
-  const devices = devicesData ?? [];
+  const devices = useMemo(
+    () => applyCanonicalIdsFromApi(devicesData ?? [], onlineLookup?.canonicalIds),
+    [devicesData, onlineLookup?.canonicalIds],
+  );
   const isLoading = devicesLoading || onlineLoading;
 
   const filtered = useMemo(() => {
@@ -128,8 +131,9 @@ export default function Command() {
           const statusAcc = onlineAccessory(online);
           return (
             <List.Item
-              key={device.name.toLowerCase()}
+              key={device.id}
               title={device.name}
+              subtitle={device.id}
               accessories={[
                 ...(statusAcc ? [statusAcc] : []),
                 ...(device.platform ? [{ text: device.platform }] : []),
@@ -146,7 +150,11 @@ export default function Command() {
               icon={platformIcon(device.platform)}
               actions={
                 <ActionPanel>
-                  <Action title="Connect" icon={Icon.Link} onAction={() => connectRustDesk(device.id)} />
+                  <Action
+                    title={`Connect (${device.id})`}
+                    icon={Icon.Link}
+                    onAction={() => connectRustDesk(device.id)}
+                  />
                   <Action.CopyToClipboard title="Copy ID" content={device.id} />
                   <Action title="Reload Peers" icon={Icon.ArrowClockwise} onAction={reloadAll} />
                 </ActionPanel>
