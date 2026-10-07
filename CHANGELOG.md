@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- Raycast v2 fix: upgrade @raycast/api to 2.6.x and rebuild (Missing executable)
 - Connect with canonical RustDesk IDs (UPPERCASE named IDs / Server Pro exact id); safer peer dedupe
 - Detached RustDesk launch (keep session alive; preserve ID case; no rustdesk:// lowercase)
 - README: note that testing has only been done on macOS

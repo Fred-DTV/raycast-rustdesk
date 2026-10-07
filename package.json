@@ -19,7 +19,11 @@
       "name": "rustconnect",
       "title": "Rustconnect",
       "description": "Search local peers and connect with exact RustDesk IDs",
-      "keywords": ["rustdesk", "rdp", "remote"],
+      "keywords": [
+        "rustdesk",
+        "rdp",
+        "remote"
+      ],
       "mode": "view"
     }
   ],
@@ -61,8 +65,8 @@
     }
   ],
   "dependencies": {
-    "@raycast/api": "^1.104.1",
-    "@raycast/utils": "^1.17.0"
+    "@raycast/api": "^2.6.3",
+    "@raycast/utils": "^2.3.2"
   },
   "devDependencies": {
     "@raycast/eslint-config": "^2.0.4",
